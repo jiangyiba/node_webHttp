@@ -34,7 +34,7 @@ let server = http.createServer((request,response)=>{
                     //如果没有首页则返回列表
                     let backData = '';
                     for(let i = 0; i < files.length; i++) {
-                        backData+= `<h3><a href='./${files[i]}'>${files[i]}</a></h3>`;
+                        backData+= `<h3><a href="${request.url=='/'?'':request.url}/${files[i]}">${files[i]}</a></h3>`;
                     }
                     console.log(backData);
                     response.writeHead(200,{"content-type":"text/html;charset=utf-8"});
