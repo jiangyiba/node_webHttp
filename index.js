@@ -1,56 +1,72 @@
-//引入模块
+//引入node模板
 let http = require('http');
-let path = require('path');
 let fs = require('fs');
-//根目录路径
-let rootPath = path.join(__dirname,"www");
-//开启
+let path = require('path');
+let querystring = require('querystring');
+//引入第三方的模板,设置文件的识别码
+let mime = require('mime');
+//设置服务器的根目录
+let rootPath = path.join(__dirname,'www');
+
+//开启服务器
 let server = http.createServer((request,response)=>{
-    //返回的绝对路径
-    let filePath = path.join(rootPath,request.url);
-    console.log(filePath);
-    let exists = fs.existsSync(filePath)
-    //判断有没有文件,有文件才执行
-    if(exists) {
-        fs.readdir(filePath,(err,files)=>{
-            if(err) {
-                console.log(err);
-                //进入到这里说明是文件
-                fs.readFile(filePath,(err,data)=>{
-                    response.end(data);
+    //创建绝对路径并且完成根目录下的中文url解码
+    let filesPath = path.join(rootPath,querystring.unescape(request.url));
+    //判断根目录的路径是否存在
+    let isYes = fs.existsSync(filesPath);
+    if(isYes) {
+        //如果有则进来判断是否为文件夹
+        fs.readdir(filesPath,(err,file)=>{
+            if(err){
+                //进入这里说明不是文件夹,直接读取文件返回数据
+                fs.readFile(filesPath,(err,data)=>{
+                    if(err) {
+                        console.log(err);
+                    }else{
+                        response.end(data);
+                    }
                 })
             }else{
-                console.log(files);
-                //判断有没有index.html 有首页直接读取首页,没有则返回列表
-                if(files.indexOf('index.html') != -1) {
-                    fs.readFile(path.join(filePath,"index.html"),(err,data)=>{
+                //进入这里说明是文件夹,判断是否为index.html
+                console.log(file);
+                
+                if(file.indexOf('index.html') != -1){
+                    //如果有直接读取文件,当做主页
+                    fs.readFile(path.join(filesPath,'index.html'),(err,data)=>{
                         if(err) {
                             console.log(err);
                         }else{
+                            response.writeHead(200,{"content-type":"text/html;charset=utf-8"});
                             response.end(data);
                         }
                     })
                 }else{
-                    //如果没有首页则返回列表
+                    //没有index.html则返回文件列表
                     let backData = '';
-                    for(let i = 0; i < files.length; i++) {
-                        backData+= `<h3><a href="${request.url=='/'?'':request.url}/${files[i]}">${files[i]}</a></h3>`;
+                    for(let i = 0; i < file.length; i++) {
+                        backData += `<h3><a href="${request.url == '/'?'':request.url}/${file[i]}">${file[i]}</a></h3>`
                     }
-                    console.log(backData);
                     response.writeHead(200,{"content-type":"text/html;charset=utf-8"});
                     response.end(backData);
-
                 }
             }
         })
+
+        
     }else{
-        //没有则返回404,和文件不存在
-        response.writeHead(404,{'content-type':'text/html;charset=utf-8'});
+        //如果没有则返回没有这个页面 状态码改成404
+        response.writeHead(404,{"content-type":"text/html;charset=utf-8"});
         response.end(`
         <h1>404</h1>
         <h3>文件不存在......</h3>
-        `);
+        `)
     }
+    
 }).listen(8080,"127.0.0.1",()=>{
-    console.log('hay!!!it');
+    console.log('服务器开启');
+    
 })
+
+
+// 引入了第三方代码
+//npm install mime
